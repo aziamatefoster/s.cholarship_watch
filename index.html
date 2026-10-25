@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scholarship Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
+<style>
+:root { color-scheme: light; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+/* Layout: a ledger of opportunities. Masthead, filter bar, then one ruled row per scholarship, sorted by what closes first. */
+:root {
+  --paper: #f5f8f6;
+  --panel: #ffffff;
+  --ink: #14211b;
+  --muted: #55655c;
+  --line: #d7e0da;
+  --accent: #0d5a3c;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2f0e8;
+  --open: #0d5a3c;
+  --open-bg: #e2f0e8;
+  --soon: #8a5a00;
+  --soon-bg: #fbefd2;
+  --tbc: #3d4f7a;
+  --tbc-bg: #e4e9f5;
+  --closed: #6a756f;
+  --closed-bg: #e8ece9;
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1a15; --panel: #16241d; --ink: #e8f0eb; --muted: #9fb2a7; --line: #2a3d33;
+    --accent: #5fc593; --accent-ink: #08140e; --accent-soft: #1d3a2b;
+    --open: #7fd7a8; --open-bg: #1d3a2b; --soon: #f1c65f; --soon-bg: #3a2f10;
+    --tbc: #a9bcf0; --tbc-bg: #222d4a; --closed: #93a39a; --closed-bg: #22312a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1a15; --panel: #16241d; --ink: #e8f0eb; --muted: #9fb2a7; --line: #2a3d33;
+  --accent: #5fc593; --accent-ink: #08140e; --accent-soft: #1d3a2b;
+  --open: #7fd7a8; --open-bg: #1d3a2b; --soon: #f1c65f; --soon-bg: #3a2f10;
+  --tbc: #a9bcf0; --tbc-bg: #222d4a; --closed: #93a39a; --closed-bg: #22312a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding-block: 0 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 980px; margin: 0 auto; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.mast { padding-block: 28px 20px; border-bottom: 2px solid var(--ink); display: grid; gap: 6px; }
+.mast .kicker { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.mast h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 6vw, 44px); line-height: 1.08; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.mast p { margin: 4px 0 0; color: var(--muted); max-width: 62ch; }
+
+.bar { display: grid; gap: 12px; padding-block: 16px; border-bottom: 1px solid var(--line); }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab {
+  font: 500 14px var(--font-body); color: var(--ink); background: transparent;
+  border: 1px solid var(--line); border-radius: 4px; padding: 8px 14px; cursor: pointer;
+  display: inline-flex; gap: 8px; align-items: baseline;
+}
+.tab .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.tab[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.tab[aria-pressed="true"] .n { color: inherit; opacity: .85; }
+.tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.search { flex: 1 1 220px; min-width: 0; }
+.search input {
+  width: 100%; font: 400 15px var(--font-body); color: var(--ink); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 4px; padding: 9px 12px;
+}
+.toggle { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: 14px; cursor: pointer; }
+.toggle input { accent-color: var(--accent); width: 16px; height: 16px; }
+.stamp { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+
+.list { list-style: none; margin: 0; padding: 0; }
+.row {
+  display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 8px 28px;
+  padding-block: 22px; border-bottom: 1px solid var(--line);
+}
+.row[data-state="closed"] .title, .row[data-state="closed"] .desc { color: var(--muted); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 6px; }
+.badge { font: 600 11px var(--font-body); letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 3px; }
+.badge.open { color: var(--open); background: var(--open-bg); }
+.badge.soon { color: var(--soon); background: var(--soon-bg); }
+.badge.upcoming, .badge.tbc { color: var(--tbc); background: var(--tbc-bg); }
+.badge.closed { color: var(--closed); background: var(--closed-bg); }
+.scope { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.title { font-family: var(--font-display); font-weight: 600; font-size: 21px; line-height: 1.25; margin: 0; text-wrap: balance; }
+.provider { color: var(--muted); font-size: 14px; margin: 2px 0 8px; }
+.desc { margin: 0 0 6px; max-width: 64ch; }
+.note { margin: 0; font-size: 13.5px; color: var(--muted); max-width: 64ch; }
+.when { text-align: right; display: grid; align-content: start; gap: 2px; }
+.when .label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.when .date { font-family: var(--font-mono); font-weight: 500; font-size: 16px; font-variant-numeric: tabular-nums; }
+.when .left { font-size: 13.5px; color: var(--muted); }
+.when .left.hot { color: var(--soon); font-weight: 600; }
+.acts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.btn {
+  font: 500 14px var(--font-body); text-decoration: none; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  border-radius: 4px; padding: 8px 14px; display: inline-flex; align-items: center;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn:hover { border-color: var(--accent); }
+.empty { padding: 40px 0; color: var(--muted); }
+
+.foot { margin-top: 28px; display: grid; gap: 14px; color: var(--muted); font-size: 13.5px; max-width: 70ch; }
+.foot h2 { font-family: var(--font-display); font-size: 17px; color: var(--ink); margin: 0 0 2px; }
+.foot p { margin: 0; }
+
+@media (max-width: 640px) {
+  .row { grid-template-columns: minmax(0, 1fr); }
+  .when { text-align: left; grid-template-columns: auto 1fr; gap: 0 12px; align-items: baseline; }
+  .when .label { grid-column: 1 / -1; }
+  .title { font-size: 19px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .tab { transition: border-color .15s, background-color .15s; }
+}
+.fresh { padding-block: 18px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+.fresh-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; }
+.fresh h2 { font-family: var(--font-display); font-size: 19px; margin: 0; }
+.fresh-list { list-style: none; margin: 0; padding: 0; }
+.fresh-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; padding-block: 10px; border-top: 1px solid var(--line); }
+.fresh-item a { font-weight: 500; text-decoration: none; overflow-wrap: anywhere; }
+.fresh-item a:hover { text-decoration: underline; }
+.fresh-item .sub { font-size: 13px; color: var(--muted); }
+.fresh-item .tag { font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-align: right; }
+.fresh-none { color: var(--muted); margin: 0; }
+@media (max-width: 640px) { .fresh-item { grid-template-columns: minmax(0, 1fr); } .fresh-item .tag { text-align: left; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <span class="kicker" id="kicker">Scholarship Desk</span>
+    <h1>Scholarships for Ghanaian students, sorted by deadline</h1>
+    <p>One list of local and international opportunities, each with its official application link. Checked against the sources below.</p>
+  </header>
+
+  <section class="fresh" aria-label="New from the daily check">
+    <div class="fresh-head"><h2>New from the daily check</h2><span class="stamp" id="checked"></span></div>
+    <ul class="fresh-list" id="freshList"><li class="fresh-none">Loading the latest check.</li></ul>
+  </section>
+
+  <section class="bar" aria-label="Filters">
+    <div class="tabs" id="tabs"></div>
+    <div class="tools">
+      <div class="search"><input id="q" type="search" placeholder="Search by name, provider or level" aria-label="Search scholarships"></div>
+      <label class="toggle" for="hideClosed"><input id="hideClosed" type="checkbox"> Hide closed</label>
+      <span class="stamp" id="stamp"></span>
+    </div>
+  </section>
+
+  <ol class="list" id="list"></ol>
+
+  <footer class="foot">
+    <div>
+      <h2>How to read the dates</h2>
+      <p>Open means applications are accepted now. Opening soon means the provider's usual calendar puts the window ahead. To confirm means no reliable date was found, so check the official page before telling students. Where a date comes from a listing site instead of the provider, the note says so.</p>
+    </div>
+    <div>
+      <h2>Sources still to add</h2>
+      <p>University of Ghana financial aid, KNUST scholarships, UDS, Takoradi Technical University, Lancaster University Ghana, GNPC Foundation, KGL Foundation, Otumfuo Osei Tutu II Foundation, CAMFED Ghana, Wells Mountain Initiative, Kufuor Foundation and JEQ Foundation.</p>
+    </div>
+    <div>
+      <h2>Alerts</h2>
+      <p>Every morning at 07:00 the checker looks at the sources it can read and emails you anything new. The same posts appear in the box at the top of this page for 14 days. The scholarship list below, with its deadlines, is updated by hand.</p>
+    </div>
+  </footer>
+</div>
+
+<script>
+var TODAY = (function () { var n = new Date(); return Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()); })();
+var DAY = 86400000;
+function utc(s) { var p = s.split("-"); return Date.UTC(+p[0], +p[1] - 1, +p[2]); }
+function fmt(s) {
+  var d = new Date(utc(s));
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+}
+
+var DATA = [
+  { id: "getfund-local", scope: "local", title: "GETFund Local Undergraduate and Postgraduate Scholarships 2026/27",
+    provider: "Ghana Education Trust Fund (GETFund)", level: "Undergraduate, Postgraduate",
+    desc: "Tuition support for Ghanaians admitted to accredited tertiary programmes in Ghana.",
+    note: "Opened 5 Oct 2026. The closing date comes from a listing site, so confirm it on the GETFund portal.",
+    deadline: "2026-11-27",
+    apply: "https://scholarships.getfund.gov.gh/",
+    source: "https://www.getfund.gov.gh/news/getfund-opens-applications-for-2026-27-undergraduate-and-postgraduate-local-scholarships" },
+  { id: "daad-wacci", scope: "local", title: "DAAD In-Country/In-Region Master's in Seed Science and Technology",
+    provider: "DAAD with WACCI, University of Ghana", level: "Master's",
+    desc: "Funded master's study at the West Africa Centre for Crop Improvement for African graduates.",
+    note: "Deadline taken from a listing site. Confirm with DAAD Ghana or WACCI before sharing.",
+    deadline: "2026-11-12",
+    apply: "https://www.daad-ghana.org/en/category/call-for-application/",
+    source: "https://scholarshipsforafricans.com/fr/bourses/daad-in-country-in-region-wacci-seed-science-and-technology" },
+  { id: "gks", scope: "international", title: "Global Korea Scholarship 2027, Undergraduate Degrees",
+    provider: "Government of Korea, administered by NIIED", level: "Undergraduate",
+    desc: "Fully funded bachelor's study in South Korea through the Embassy Track or the University Track.",
+    note: "Embassy Track opened in September 2026. Deadlines differ by track and country, so check the embassy notice. Graduate programmes are reported for Feb to Mar 2027.",
+    status: "open", deadlineText: "Varies by track",
+    apply: "https://www.studyinkorea.go.kr",
+    source: "https://www.mofa.go.kr/ke-en/brd/m_10538/view.do?seq=761541" },
+  { id: "turkiye", scope: "international", title: "Türkiye Scholarships 2027/28",
+    provider: "Presidency for Turks Abroad and Related Communities (YTB)", level: "Undergraduate, Master's, PhD",
+    desc: "Fully funded study in Türkiye with university placement from up to 12 preferences and a language year.",
+    note: "Usual window is 10 Jan to 20 Feb. The 2026 round ran on those dates and the 2027 dates are expected to match but are not yet announced.",
+    opens: "2027-01-10", deadline: "2027-02-20",
+    apply: "https://tbbs.turkiyeburslari.gov.tr/",
+    source: "https://turkiyeburslari.gov.tr" },
+  { id: "daad-de", scope: "international", title: "DAAD Scholarships for Study in Germany",
+    provider: "German Academic Exchange Service (DAAD)", level: "Master's, PhD",
+    desc: "Many programmes, each with its own window. DAAD runs a regional office in Accra.",
+    note: "The master's call for 2026/27 closed on 31 Oct 2025, so a similar late-October window is likely. Not yet confirmed for the next intake.",
+    status: "tbc", deadlineText: "To confirm",
+    apply: "https://www.daad-ghana.org/en/",
+    source: "https://msingermany.com/blog/daad-scholarships-2026-27" },
+  { id: "fulbright", scope: "international", title: "Fulbright Foreign Student Program",
+    provider: "U.S. Department of State, via the U.S. Embassy in Accra", level: "Master's, PhD",
+    desc: "Funded graduate study and research in the United States.",
+    note: "Listing sites give 1 or 15 Oct 2026 for the current round, which may already have closed. Confirm with the U.S. Embassy in Accra.",
+    status: "tbc", deadlineText: "To confirm",
+    apply: "https://foreign.fulbrightonline.org",
+    source: "https://scholar.africa/scholarships/fulbright-foreign-student-program" },
+  { id: "commonwealth", scope: "international", title: "Commonwealth Scholarships, United Kingdom",
+    provider: "Commonwealth Scholarship Commission, funded by the FCDO", level: "Master's, PhD",
+    desc: "Funded UK study for citizens of eligible Commonwealth countries, including Ghana. Applicants go through a nominating agency.",
+    note: "The 2027 intake is expected to open in autumn 2026. Last year's master's and PhD deadline was 14 Oct 2025.",
+    status: "tbc", deadlineText: "To confirm",
+    apply: "https://cscuk.fcdo.gov.uk/scholarships/",
+    source: "https://nottingham.ac.uk/pgstudy/funding/commonwealth-phd-scholarship" },
+  { id: "gsa-foreign", scope: "local", title: "Foreign scholarship offers posted by the Ghana Scholarships Authority",
+    provider: "Ghana Scholarships Authority", level: "Varies",
+    desc: "Government-to-government awards for study abroad, such as the offers from Serbia, China and Thailand for 2026/27.",
+    note: "Each notice has its own closing date. Open the opportunities page and read the notice you want.",
+    status: "tbc", deadlineText: "Per notice",
+    apply: "https://scholarships.gov.gh/opportunities",
+    source: "https://scholarships.gov.gh/opportunities" },
+  { id: "chevening", scope: "international", title: "Chevening Scholarships 2027/28",
+    provider: "UK Foreign, Commonwealth and Development Office", level: "Master's",
+    desc: "Fully funded one-year master's degrees at UK universities.",
+    note: "The 2027/28 round ran from 4 Aug to 6 Oct 2026. The next round is expected to open around August 2027.",
+    deadline: "2026-10-06",
+    apply: "https://www.chevening.org/scholarships/",
+    source: "https://study-uk.britishcouncil.org/en/scholarships-funding/chevening-scholarships" },
+  { id: "mcf-knust", scope: "local", title: "Mastercard Foundation Scholars Program at KNUST",
+    provider: "Mastercard Foundation and KNUST", level: "Undergraduate",
+    desc: "Full support for academically strong students with financial need, with a focus on leadership.",
+    note: "The 2025/26 call closed on 30 May 2025. No 2026/27 call was found. Check the programme page.",
+    status: "tbc", deadlineText: "No call found",
+    apply: "https://mcf.knust.edu.gh/",
+    source: "https://www.opportunitiesforafricans.com/kwame-nkrumah-university-of-science-and-technology-knust-mastercard-foundation-scholars-program-2025-2026/" },
+  { id: "gsa-local", scope: "local", title: "Local Tertiary Scholarship 2026/27",
+    provider: "Ghana Scholarships Authority", level: "Undergraduate, Postgraduate",
+    desc: "Government support for deserving students at Ghanaian tertiary institutions, including the Needy but Brilliant scheme.",
+    note: "Applications ran from 10 Apr to 15 May 2026 and interviews have started.",
+    deadline: "2026-05-15",
+    apply: "https://apply.scholarships.gov.gh/",
+    source: "https://scholarships.gov.gh/opportunities/local-tertiary-scholarship-applications-for-20262027-academic-year" },
+  { id: "mtn", scope: "local", title: "MTN Bright Scholarship 2026/27",
+    provider: "MTN Ghana Foundation", level: "Undergraduate, Vocational",
+    desc: "Tuition, accommodation, a book stipend and a device for continuing students at public tertiary institutions. About 500 awards.",
+    note: "The 2026 round closed on 31 May. The next round has not been announced.",
+    deadline: "2026-05-31",
+    apply: "https://scholarship.mtn.com.gh",
+    source: "https://mtn.com.gh/newsabout/mtn-ghana-foundation-opens-application-for-2026-bright-scholarship/" },
+  { id: "getfund-foreign", scope: "international", title: "GETFund Postgraduate Foreign Scholarship 2026/27",
+    provider: "Ghana Education Trust Fund (GETFund)", level: "Master's, PhD",
+    desc: "Fully funded postgraduate study abroad for Ghanaian citizens with admission to a recognised foreign programme.",
+    note: "The 2026/27 round closed on 30 Apr 2026.",
+    deadline: "2026-04-30",
+    apply: "https://scholarships.getfund.gov.gh/",
+    source: "https://www.opportunitiesforafricans.com/the-ghana-education-trust-fund-getfund-postgraduate-foreign-scholarship-2026-2027/" }
+];
+
+function classify(s) {
+  var o = { state: "tbc", days: null };
+  if (s.status === "open") { o.state = "open"; return o; }
+  if (s.status === "tbc") { return o; }
+  if (s.opens && utc(s.opens) > TODAY) { o.state = "upcoming"; o.days = Math.round((utc(s.opens) - TODAY) / DAY); o.until = "opens"; return o; }
+  var d = Math.round((utc(s.deadline) - TODAY) / DAY);
+  o.days = d;
+  if (d < 0) o.state = "closed";
+  else if (d <= 45) o.state = "soon";
+  else o.state = "open";
+  return o;
+}
+var RANK = { soon: 0, open: 1, upcoming: 2, tbc: 3, closed: 4 };
+DATA.forEach(function (s) { s._c = classify(s); });
+DATA.sort(function (a, b) {
+  var ra = RANK[a._c.state], rb = RANK[b._c.state];
+  if (ra !== rb) return ra - rb;
+  if (a._c.state === "closed") return utc(b.deadline) - utc(a.deadline);
+  var da = a.deadline ? utc(a.deadline) : 9e15, db = b.deadline ? utc(b.deadline) : 9e15;
+  return da - db;
+});
+
+var tab = "all", query = "", hideClosed = false;
+try { var saved = localStorage.getItem("sd-tab"); if (saved) tab = saved; } catch (e) {}
+var LABEL = { open: "Open", soon: "Closing soon", upcoming: "Opening soon", tbc: "To confirm", closed: "Closed" };
+
+function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+function shareText(s) {
+  var when = s.deadline ? "Deadline: " + fmt(s.deadline) : (s.deadlineText ? "Deadline: " + s.deadlineText : "");
+  return s.title + "\n" + s.provider + "\n" + when + "\nApply: " + s.apply;
+}
+
+function whenBlock(s) {
+  var c = s._c, label, date, left = "", hot = "";
+  if (c.state === "upcoming") {
+    label = "Opens"; date = fmt(s.opens);
+    left = "Closes " + fmt(s.deadline) + " (in " + c.days + " days to open)";
+    left = "Closes " + fmt(s.deadline);
+  } else if (s.deadline) {
+    label = c.state === "closed" ? "Closed" : "Deadline"; date = fmt(s.deadline);
+    if (c.state === "closed") left = Math.abs(c.days) + (Math.abs(c.days) === 1 ? " day ago" : " days ago");
+    else if (c.days === 0) { left = "Closes today"; hot = " hot"; }
+    else { left = c.days + (c.days === 1 ? " day left" : " days left"); if (c.state === "soon") hot = " hot"; }
+  } else {
+    label = "Deadline"; date = s.deadlineText || "To confirm";
+  }
+  return '<div class="when"><span class="label">' + label + '</span><span class="date">' + esc(date) + '</span>' +
+    (left ? '<span class="left' + hot + '">' + esc(left) + '</span>' : "") + "</div>";
+}
+
+function render() {
+  var counts = { all: 0, local: 0, international: 0 };
+  DATA.forEach(function (s) { counts.all++; counts[s.scope]++; });
+  var tabs = [["all", "All"], ["local", "Local"], ["international", "International"]];
+  document.getElementById("tabs").innerHTML = tabs.map(function (t) {
+    return '<button class="tab" type="button" data-tab="' + t[0] + '" aria-pressed="' + (tab === t[0]) + '">' + t[1] + ' <span class="n">' + counts[t[0]] + "</span></button>";
+  }).join("");
+
+  var q = query.trim().toLowerCase();
+  var rows = DATA.filter(function (s) {
+    if (tab !== "all" && s.scope !== tab) return false;
+    if (hideClosed && s._c.state === "closed") return false;
+    if (!q) return true;
+    return (s.title + " " + s.provider + " " + s.level + " " + s.desc).toLowerCase().indexOf(q) !== -1;
+  });
+
+  var html = rows.map(function (s, i) {
+    var c = s._c;
+    return '<li class="row" data-state="' + c.state + '"><div>' +
+      '<div class="meta"><span class="badge ' + c.state + '">' + LABEL[c.state] + '</span><span class="scope">' +
+      (s.scope === "local" ? "Local" : "International") + " · " + esc(s.level) + "</span></div>" +
+      '<h2 class="title">' + esc(s.title) + "</h2>" +
+      '<p class="provider">' + esc(s.provider) + "</p>" +
+      '<p class="desc">' + esc(s.desc) + "</p>" +
+      '<p class="note">' + esc(s.note) + "</p></div>" +
+      whenBlock(s) +
+      '<div class="acts">' +
+      '<a class="btn primary" href="' + esc(s.apply) + '" target="_blank" rel="noopener">' + (c.state === "closed" ? "Official page" : "Apply") + "</a>" +
+      '<a class="btn" href="' + esc(s.source) + '" target="_blank" rel="noopener">Source</a>' +
+      '<a class="btn" href="https://wa.me/?text=' + encodeURIComponent(shareText(s)) + '" target="_blank" rel="noopener">Share on WhatsApp</a>' +
+      '<button class="btn" type="button" data-copy="' + s.id + '">Copy message</button>' +
+      "</div></li>";
+  }).join("");
+  document.getElementById("list").innerHTML = html || '<li class="empty">No scholarships match. Clear the search or show closed ones.</li>';
+}
+
+document.getElementById("tabs").addEventListener("click", function (e) {
+  var b = e.target.closest("[data-tab]"); if (!b) return;
+  tab = b.getAttribute("data-tab");
+  try { localStorage.setItem("sd-tab", tab); } catch (err) {}
+  render();
+});
+document.getElementById("q").addEventListener("input", function (e) { query = e.target.value; render(); });
+document.getElementById("hideClosed").addEventListener("change", function (e) { hideClosed = e.target.checked; render(); });
+document.getElementById("list").addEventListener("click", function (e) {
+  var b = e.target.closest("[data-copy]"); if (!b) return;
+  var s = DATA.filter(function (x) { return x.id === b.getAttribute("data-copy"); })[0];
+  var done = function () { b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy message"; }, 1600); };
+  try {
+    navigator.clipboard.writeText(shareText(s)).then(done, function () { b.textContent = "Press and hold to copy from WhatsApp instead"; });
+  } catch (err) { b.textContent = "Use Share on WhatsApp"; }
+});
+
+function loadFresh() {
+  var box = document.getElementById("freshList"), chk = document.getElementById("checked");
+  var none = function (msg) { box.innerHTML = '<li class="fresh-none">' + msg + "</li>"; };
+  fetch("state.json", { cache: "no-store" }).then(function (r) {
+    if (!r.ok) throw new Error("no file");
+    return r.json();
+  }).then(function (st) {
+    if (st._updated) {
+      chk.textContent = "Last checked " + new Date(st._updated).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }) + " UTC";
+    }
+    var posts = (st._posts || []).filter(function (p) { return /^https?:/.test(p.url) && (TODAY - utc(p.found)) / DAY <= 14; });
+    if (!posts.length) { none("Nothing new in the last 14 days. The checker looks again tomorrow morning."); return; }
+    box.innerHTML = posts.map(function (p) {
+      var dl = p.deadline ? "Possible deadline " + esc(p.deadline) + ", check the page" : "Deadline not found";
+      return '<li class="fresh-item"><div><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.title) + '</a>' +
+        '<div class="sub">' + esc(p.source) + " · " + dl + '</div></div>' +
+        '<span class="tag">' + esc(p.scope || "") + " · found " + esc(fmt(p.found)) + "</span></li>";
+    }).join("");
+  }).catch(function () { none("The daily check has not saved anything yet."); });
+}
+
+var openNow = DATA.filter(function (s) { return s._c.state === "open" || s._c.state === "soon"; }).length;
+var longDate = new Date(TODAY).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+document.getElementById("kicker").textContent = "Scholarship Desk · " + longDate;
+document.getElementById("stamp").textContent = openNow + " open now · " + DATA.length + " tracked";
+render();
+loadFresh();
+</script>
+</body>
+</html>

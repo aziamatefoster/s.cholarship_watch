@@ -8,6 +8,7 @@ Usage:
     python watch.py              check all sources and email new posts
     python watch.py --dry-run    check and print the digest, send nothing
 """
+import datetime
 import hashlib
 import json
 import os
@@ -159,6 +160,22 @@ def main():
     for item in new_items[:MAX_DEADLINE_LOOKUPS]:
         item["deadline"] = find_deadline(item["url"])
         time.sleep(PAUSE_SECONDS)
+
+    # keep a record of new posts for the dashboard (stored inside state.json)
+    now = datetime.datetime.now(datetime.timezone.utc)
+    posts = state.get("_posts", [])
+    known = {p["url"] for p in posts}
+    for item in new_items:
+        if item["url"] in known:
+            continue
+        known.add(item["url"])
+        posts.insert(0, {
+            "source": item["source"], "scope": item["scope"], "title": item["text"],
+            "url": item["url"], "found": now.strftime("%Y-%m-%d"), "deadline": item.get("deadline"),
+        })
+    state["_posts"] = posts[:200]
+    if len(failures) < len(sources):
+        state["_updated"] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     if new_items:
         text, html = build_digest(new_items, failures)
