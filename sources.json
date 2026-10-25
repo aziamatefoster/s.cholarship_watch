@@ -1,0 +1,13 @@
+[
+  {"name": "Ghana Scholarships Authority", "scope": "Local", "url": "https://scholarships.gov.gh/opportunities"},
+  {"name": "GETFund Scholarships", "scope": "Local", "url": "https://scholarships.getfund.gov.gh/"},
+  {"name": "GETFund News", "scope": "Local", "url": "https://www.getfund.gov.gh/news"},
+  {"name": "MTN Ghana Foundation", "scope": "Local", "url": "https://mtn.com.gh/newsabout/"},
+  {"name": "Mastercard Foundation Scholars at KNUST", "scope": "Local", "url": "https://mcf.knust.edu.gh/"},
+  {"name": "DAAD Ghana", "scope": "International", "url": "https://www.daad-ghana.org/en/category/call-for-application/"},
+  {"name": "Chevening", "scope": "International", "url": "https://www.chevening.org/scholarships/"},
+  {"name": "Commonwealth Scholarships UK", "scope": "International", "url": "https://cscuk.fcdo.gov.uk/scholarships/"},
+  {"name": "Fulbright Foreign Student Program", "scope": "International", "url": "https://foreign.fulbrightonline.org"},
+  {"name": "Türkiye Scholarships", "scope": "International", "url": "https://turkiyeburslari.gov.tr"},
+  {"name": "Study in Korea (GKS)", "scope": "International", "url": "https://www.studyinkorea.go.kr"}
+]
