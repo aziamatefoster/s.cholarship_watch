@@ -1,10 +1,20 @@
 {
-  "_posts": [],
-  "_updated": "2026-10-26T07:41:57Z",
+  "_posts": [
+    {
+      "deadline": "5 November 2026",
+      "found": "2026-10-27",
+      "scope": "International",
+      "source": "Commonwealth Scholarships UK",
+      "title": "Commonwealth Fellowships – information for candidates (non-ODA countries only)",
+      "url": "https://cscuk.fcdo.gov.uk/scholarships/commonwealth-fellowships-information-for-candidates/"
+    }
+  ],
+  "_updated": "2026-10-27T07:37:44Z",
   "https://cscuk.fcdo.gov.uk/scholarships/": [
     "25109d4af8612e27",
     "2cbdbe20f07608c3",
     "36472eada72cefc9",
+    "4dae109498758198",
     "78753fd3ca5ea8f6",
     "7adbd47251f9c33b",
     "7e8bff1470d1fc8f",
